@@ -1,0 +1,19 @@
+{
+    "name": "star/captainslog",
+    "description": "Ray's ambitious attempt at comrpehensive logging",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Raymond Herndon",
+            "email": "rherndon@starsacramento.org"
+        }
+    ],
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": {"STAR\\captains\\": "src/"}
+    },
+    "require": {
+        "monolog/monolog": "^2.1",
+        "donatj/phpuseragentparser": "^1.1"
+    }
+}
