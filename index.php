@@ -15,8 +15,6 @@ class user {
 $user = new User();
 $user->id = 25;
 
-$captainslog->user = $user;
-
 include 'test1.php';
 include 'test2.php';
 

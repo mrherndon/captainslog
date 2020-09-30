@@ -19,6 +19,10 @@ class databaseHandler extends AbstractProcessingHandler {
         if(!empty($customTableName)) $this->logType = 'LOG_'.$customTableName;
         $this->{$this->logType.'Initialized'} = false;
         $this->hasData = false;
+
+        $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        $this->pdo->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+
         parent::__construct($level, true);      
     }
 
@@ -54,9 +58,9 @@ class databaseHandler extends AbstractProcessingHandler {
             "CREATE TABLE IF NOT EXISTS $this->logType
             (`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
             `channel` VARCHAR(255), `level` INT, `message` LONGTEXT, 
-            `time` INT UNSIGNED, `formatted` VARCHAR(255),
+            `time` INT UNSIGNED, `formatted` TEXT,
             `userId` INT UNSIGNED, PRIMARY KEY (`id`)) 
-            ENGINE = InnoDB CHARSET=utf8 COLLATE utf8mb4_unicode_520_ci;"
+            ENGINE = InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_unicode_520_ci;"
         );
         $this->statement = $this->pdo->prepare(
             "INSERT INTO $this->logType
@@ -75,7 +79,7 @@ class databaseHandler extends AbstractProcessingHandler {
             `class` VARCHAR(225) NULL, 
             `function` VARCHAR(255) NULL, `args` LONGTEXT NULL, 
             PRIMARY KEY (`id`)) 
-            ENGINE = InnoDB CHARSET=utf8 COLLATE utf8mb4_unicode_520_ci;'
+            ENGINE = InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_unicode_520_ci;'
         );
 
         $statement = $this->pdo->prepare(
@@ -106,7 +110,7 @@ class databaseHandler extends AbstractProcessingHandler {
             `relativeTable` VARCHAR(255), `relativeId` INT NOT NULL,
             `key` VARCHAR(255) NULL, `value` VARCHAR(255) NULL,
             PRIMARY KEY (`id`)) 
-            ENGINE = InnoDB CHARSET=utf8 COLLATE utf8mb4_unicode_520_ci;'
+            ENGINE = InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_unicode_520_ci;'
         );
 
         $statement = $this->pdo->prepare(
