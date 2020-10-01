@@ -132,8 +132,8 @@ class tricorder {
 
         $this->statement = $this->pdo->prepare(
             'INSERT INTO `LOG_VISITORS`
-            (INET6_ATON(`ipAddress`), `userId`, `identity`)
-            VALUES (:ipAddress, :userId, :identity)'
+            (`ipAddress`, `userId`, `identity`)
+            VALUES (INET6_ATON(:ipAddress), :userId, :identity)'
         );
     }
 
