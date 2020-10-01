@@ -10,28 +10,28 @@ class tricorder {
 
     // LOG_VISITORS table
     private int $visitorId;
-    private int $userId;
-    private string $userIp;
-    private string $identifyUser;
+    private int $userId = 0;
+    private string $userIp = '';
+    private string $identifyUser = '';
     
     // LOG_PLATFORMS table
     // $visitorId - foreign key
-    private string $browser;
-    private string $browserVersion;
-    private string $platform;
-    private string $visitTimestamp;
+    private string $browser = '';
+    private string $browserVersion = '';
+    private string $platform = '';
+    private string $visitTimestamp = '0';
 
     // LOG_VISITS
-    private string $theCurrentUrl;
-    private string $referrerMedium;
-    private string $referrerSource;
-    private string $referrerContent;
-    private string $referrerKeyword;
-    private string $firstVisit;
-    private string $previousVisit;
-    private string $currentVisitStarted;
-    private string $timesVisited;
-    private string $pagesViewed;
+    private string $theCurrentUrl = '';
+    private string $referrerMedium = '';
+    private string $referrerSource = '';
+    private string $referrerContent = '';
+    private string $referrerKeyword = '';
+    private string $firstVisit = '0';
+    private string $previousVisit = '0';
+    private string $currentVisitStarted = '0';
+    private string $timesVisited = '0';
+    private string $pagesViewed = '0';
 
     function __construct() {
 		$this->pdo = new \PDO(HOSTINFO,USERNAME,PASSWORD);
