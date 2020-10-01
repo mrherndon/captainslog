@@ -49,7 +49,7 @@ class databaseHandler extends AbstractProcessingHandler {
             'userId' => $userId
         ]);
 
-        if($this->errorLogger) $this->backtrace($this->pdo->lastInsertId());
+        if($this->errorLogger && isset($this->trace)) $this->backtrace($this->pdo->lastInsertId());
         if($this->hasData) $this->logData($this->pdo->lastInsertId(), $record['context']);
     }
 

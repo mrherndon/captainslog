@@ -46,7 +46,7 @@ class tricorder {
     
     private function processDefaults(): void {
         if(isset($GLOBALS['user'])) $this->userId = $GLOBALS['user']->id ?: 0;
-		$this->theCurrentUrl = $this->urlPrefix.'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+		$this->theCurrentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http").'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
 		$this->visitTimestamp = (new \DateTime('now'))->format('U');
         $this->userIp = $_SERVER['REMOTE_ADDR'];
         
