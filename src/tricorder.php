@@ -19,7 +19,7 @@ class tricorder {
     private string $browser;
     private string $browserVersion;
     private string $platform;
-    private \DateTime $visitTimestamp;
+    private string $visitTimestamp;
 
     // LOG_VISITS
     private string $theCurrentUrl;
