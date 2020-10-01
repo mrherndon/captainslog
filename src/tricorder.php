@@ -178,5 +178,15 @@ class tricorder {
             PRIMARY KEY (`id`)) 
             ENGINE = InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_unicode_520_ci;'
         );
+
+        $this->statement = $this->pdo->prepare(
+            'INSERT INTO `LOG_VISITS`
+            (`visitorId`, `currentUrl`, `medium`, `source`, `content`,
+            `keywords`, `firstVisit`, `previousVisit`, `currentVisit`,
+            `timesVisited`, `pagesViewed`, `timestamp`)
+            VALUES(:visitorId, :currentUrl, :medium, :source, :content,
+            :keywords, :firstVisit, :previousVisit, :currentVisit,
+            :timesVisited, :pagesViewed, :timestamp)'
+        );
     }
 }
