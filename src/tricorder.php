@@ -63,10 +63,10 @@ class tricorder {
             $campaignData = $utmzArray[4];
             parse_str(strtr($campaignData, '|', '&'), $crumbs);
             
-            $this->referrerMedium = $crumbs['utmcmd'];	// medium (organic, referral, direct, etc)
-            $this->referrerSource = $crumbs['utmcsr'];	// source (google, facebook.com, etc)
-            $this->referrerContent = $crumbs['utmcct'];	// content (index.html, etc)
-            $this->referrerKeyword = $crumbs['utmctr'];	// term (search term)
+            $this->referrerMedium = $crumbs['utmcmd'] ?? '';	// medium (organic, referral, direct, etc)
+            $this->referrerSource = $crumbs['utmcsr'] ?? '';	// source (google, facebook.com, etc)
+            $this->referrerContent = $crumbs['utmcct'] ?? '';	// content (index.html, etc)
+            $this->referrerKeyword = $crumbs['utmctr'] ?? '';	// term (search term)
             
             // Parse the __utma Cookie
             list($domainHash,$uniqueId,$timestampFirstVisit,$timestampPreviousVisit,$timestampStartCurrentVisit,$numSessionsStarted) = explode('.', $_COOKIE["__utma"]);
@@ -77,9 +77,11 @@ class tricorder {
             $this->currentVisitStarted = date('U',$timestampStartCurrentVisit);   // Get timestamp of current visit.
             $this->timesVisited = $numSessionsStarted;                            // Get number of times visited.
             
-            // Parse the __utmb Cookie
-            list($domainHash,$pageViews,$garbage,$timestampStartCurrentVisit) = explode('.', $_COOKIE['__utmb']);
-            $this->pagesViewed = $pageViews; // Get the total number of page views.
+            if(isset($_COOKIE['__utmb'])) {
+                // Parse the __utmb Cookie
+                list($domainHash,$pageViews,$garbage,$timestampStartCurrentVisit) = explode('.', $_COOKIE['__utmb']);
+                $this->pagesViewed = $pageViews; // Get the total number of page views.
+            }
         }
     }
 
@@ -133,7 +135,8 @@ class tricorder {
         $this->statement = $this->pdo->prepare(
             'INSERT INTO `LOG_VISITORS`
             (`ipAddress`, `userId`, `identity`)
-            VALUES (INET6_ATON(:ipAddress), :userId, :identity)'
+            VALUES (INET6_ATON(:ipAddress), :userId, :identity)
+            ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)'
         );
     }
 
@@ -155,7 +158,7 @@ class tricorder {
             'INSERT INTO `LOG_PLATFORMS`
             (`visitorId`, `browser`, `browserVersion`, `os`, `timeLastVisited`)
             VALUES (:visitorId, :browser, :browserVersion, :os, :timeLastVisited)
-            ON DUPLICATE KEY UPDATE `timeLastVisited` = :timeLastVisited'
+            ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id), `timeLastVisited` = :timeLastVisited'
         );
     }
 
