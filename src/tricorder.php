@@ -8,12 +8,24 @@ class tricorder {
     private UserAgentParser $parser;
     private \PDOStatement $statement;
 
+    // LOG_IP_ADDRESS table
+    private int $ipId = 0;
+    private string $ipAddress = '';
+
+    // LOG_FIRST_PAGE table
+    // $theCurrentUrl
+    // $ipId - foreign key
+    // $visitTimestamp
+
     // LOG_VISITORS table
     private int $visitorId;
     private int $userId = 0;
-    private string $userIp = '';
     private string $identifyUser = '';
     
+    // LOG_VISITOR_IP_ADDRESS table
+    // $visitorId - foreign key
+    // $ipId - foreign key
+
     // LOG_PLATFORMS table
     // $visitorId - foreign key
     private string $browser = '';
@@ -48,7 +60,7 @@ class tricorder {
         if(isset($GLOBALS['user'])) $this->userId = $GLOBALS['user']->id ?: 0;
 		$this->theCurrentUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http").'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
 		$this->visitTimestamp = (new \DateTime('now'))->format('U');
-        $this->userIp = $_SERVER['REMOTE_ADDR'];
+        $this->ipAddress = $_SERVER['REMOTE_ADDR'];
         
         $ua = $this->parser->parse();
         $this->browser = $ua->browser();
@@ -86,13 +98,51 @@ class tricorder {
     }
 
     private function logTraffic(): void {
-        $this->initializeVisitor();
-        $this->statement->execute([
-            'ipAddress' => $this->userIp,
-            'userId' => $this->userId,
-            'identity' => $this->identifyUser
-        ]);
-        $this->visitorId = $this->pdo->lastInsertId();
+        if(strlen($this->ipAddress)){
+            $this->initializeIp();
+            $this->statement->execute([
+                'ipAddress' => $this->ipAddress
+            ]);
+            $this->ipId = $this->pdo->lastInsertId();
+        }
+
+        if(!$this->userId || !$this->identifyUser) {
+            $this->initalizeFirstPageLog();
+            $this->statement->execute([
+                'url' => $this->theCurrentUrl,
+                'ipId' => $this->ipId,
+                'timestamp' => $this->visitTimestamp
+            ]);
+        } else {
+            $this->initializeVisitor();
+            $this->statement->execute([
+                'userId' => $this->userId,
+                'identity' => $this->identifyUser
+            ]);
+            $this->visitorId = $this->pdo->lastInsertId();
+
+            $this->initializeVisitorsIpAddresses();
+            $this->statement->execute([
+                'visitorId' => $this->visitorId,
+                'ipId' => $this->ipId
+            ]);
+
+            $this->initializeVisit();
+            $this->statement->execute([
+                'visitorId' => $this->visitorId,
+                'currentUrl' => $this->theCurrentUrl,
+                'medium' => $this->referrerMedium,
+                'source' => $this->referrerSource,
+                'content' => $this->referrerContent,
+                'keywords' => $this->referrerKeyword,
+                'firstVisit' => $this->firstVisit,
+                'previousVisit' => $this->previousVisit,
+                'currentVisit' => $this->currentVisitStarted,
+                'timesVisited' => $this->timesVisited,
+                'pagesViewed' => $this->pagesViewed,
+                'timestamp' => $this->visitTimestamp
+            ]);
+        }
         
         $this->initializePlatform();
         $this->statement->execute([
@@ -103,62 +153,80 @@ class tricorder {
             'timeLastVisited' => $this->visitTimestamp
         ]);
 
-        $this->initializeVisit();
-        $this->statement->execute([
-            'visitorId' => $this->visitorId,
-            'currentUrl' => $this->theCurrentUrl,
-            'medium' => $this->referrerMedium,
-            'source' => $this->referrerSource,
-            'content' => $this->referrerContent,
-            'keywords' => $this->referrerKeyword,
-            'firstVisit' => $this->firstVisit,
-            'previousVisit' => $this->previousVisit,
-            'currentVisit' => $this->currentVisitStarted,
-            'timesVisited' => $this->timesVisited,
-            'pagesViewed' => $this->pagesViewed,
-            'timestamp' => $this->visitTimestamp
-        ]);
+        
+    }
+
+    private function initializeIp(): void {
+        $this->pdo->exec(
+            'CREATE TABLE IF NOT EXISTS `LOG_IP_ADDRESS`
+            (`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `ipAddress` VARBINARY(16) NOT NULL DEFAULT 0x0
+            PRIMARY KEY (`id`),
+            UNIQUE INDEX `ip`(`ipAddress`))
+            ENGINE = InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_unicode_520_ci;'
+        );
+
+        $this->statement = $this->pdo->prepare(
+            'INSERT INTO `LOG_IP_ADDRESS`
+            (`ipAddress`)
+            VALUES(INET6_ATON(:ipAddress))
+            ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)'
+        );
+    }
+
+    private function initalizeFirstPageLog(): void {
+        $this->pdo->exec(
+            'CREATE TABLE IF NOT EXISTS `LOG_FIRST_PAGE`
+            (`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `url` VARCHAR(254) NOT NULL,
+            `ipId` INT UNSIGNED NOT NULL,
+            `timestamp` INT UNSIGNED NOT NULL,
+            PRIMARY KEY (`id`))
+            ENGINE = InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_unicode_520_ci;'
+        );
+
+        $this->statement = $this->pdo->prepare(
+            'INSERT INTO `LOG_FIRST_PAGE`
+            (`url`, `ipId`, `timestamp`)
+            VALUES (:url, :ipId, :timestamp)'
+        );
     }
 
     private function initializeVisitor(): void {
         $this->pdo->exec(
             'CREATE TABLE IF NOT EXISTS `LOG_VISITORS` 
             ( `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-            `ipAddress` VARBINARY(16) NOT NULL DEFAULT 0x0,
             `userId` INT NOT NULL DEFAULT "0",
             `identity` VARCHAR(65) NOT NULL DEFAULT "0",
             PRIMARY KEY (`id`),
-            UNIQUE INDEX `person`(`ipAddress`, `userId`, `identity`)) 
+            UNIQUE INDEX `person`(`userId`, `identity`)) 
             ENGINE = InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_unicode_520_ci;'
         );
 
         $this->statement = $this->pdo->prepare(
             'INSERT INTO `LOG_VISITORS`
-            (`ipAddress`, `userId`, `identity`)
-            VALUES (INET6_ATON(:ipAddress), :userId, :identity)
-            ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)'
+            (`userId`, `identity`)
+            VALUES (:userId, :identity)
+            ON DUPLICATE KEY 
+            UPDATE id=LAST_INSERT_ID(id), `userId` = :userId, `identity` = :identity'
         );
     }
 
-    private function initializePlatform(): void {
+    private function initializeVisitorsIpAddresses(): void {
         $this->pdo->exec(
-            'CREATE TABLE IF NOT EXISTS `LOG_PLATFORMS` 
+            'CREATE TABLE IF NOT EXISTS `LOG_VISITOR_IP_ADDRESS` 
             ( `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-            `visitorId` INT UNSIGNED NOT NULL,
-            `browser` VARCHAR(20) NOT NULL DEFAULT "",
-            `browserVersion` VARCHAR(20) NOT NULL DEFAULT "",
-            `os` VARCHAR(20) NOT NULL DEFAULT "",
-            `timeLastVisited` INT UNSIGNED,
+            `visitorId` INT NOT NULL,
+            `ipId` INT NOT NULL,
             PRIMARY KEY (`id`),
-            UNIQUE INDEX `entry`(`visitorId`, `browser`, `browserVersion`, `os`)) 
+            UNIQUE INDEX `visitorIp`(`visitorId`, `ipId`)) 
             ENGINE = InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_unicode_520_ci;'
         );
 
         $this->statement = $this->pdo->prepare(
-            'INSERT INTO `LOG_PLATFORMS`
-            (`visitorId`, `browser`, `browserVersion`, `os`, `timeLastVisited`)
-            VALUES (:visitorId, :browser, :browserVersion, :os, :timeLastVisited)
-            ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id), `timeLastVisited` = :timeLastVisited'
+            'INSERT INTO `LOG_VISITOR_IP_ADDRESS`
+            (`visitorId`, `ipId`)
+            VALUES (:visitorIp, :ipId)'
         );
     }
 
@@ -190,6 +258,28 @@ class tricorder {
             VALUES(:visitorId, :currentUrl, :medium, :source, :content,
             :keywords, :firstVisit, :previousVisit, :currentVisit,
             :timesVisited, :pagesViewed, :timestamp)'
+        );
+    }
+
+    private function initializePlatform(): void {
+        $this->pdo->exec(
+            'CREATE TABLE IF NOT EXISTS `LOG_PLATFORMS` 
+            ( `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `visitorId` INT UNSIGNED NOT NULL,
+            `browser` VARCHAR(20) NOT NULL DEFAULT "",
+            `browserVersion` VARCHAR(20) NOT NULL DEFAULT "",
+            `os` VARCHAR(20) NOT NULL DEFAULT "",
+            `timeLastVisited` INT UNSIGNED,
+            PRIMARY KEY (`id`),
+            UNIQUE INDEX `entry`(`visitorId`, `browser`, `browserVersion`, `os`)) 
+            ENGINE = InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_unicode_520_ci;'
+        );
+
+        $this->statement = $this->pdo->prepare(
+            'INSERT INTO `LOG_PLATFORMS`
+            (`visitorId`, `browser`, `browserVersion`, `os`, `timeLastVisited`)
+            VALUES (:visitorId, :browser, :browserVersion, :os, :timeLastVisited)
+            ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id), `timeLastVisited` = :timeLastVisited'
         );
     }
 }
