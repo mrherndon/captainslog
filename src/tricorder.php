@@ -226,7 +226,7 @@ class tricorder {
         $this->statement = $this->pdo->prepare(
             'INSERT INTO `LOG_VISITOR_IP_ADDRESS`
             (`visitorId`, `ipId`)
-            VALUES (:visitorIp, :ipId)'
+            VALUES (:visitorId, :ipId)'
         );
     }
 
