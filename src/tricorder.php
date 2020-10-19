@@ -18,7 +18,7 @@ class tricorder {
     // $visitTimestamp
 
     // LOG_VISITORS table
-    private int $visitorId;
+    private ?int $visitorId = null;
     private int $userId = 0;
     private string $identifyUser = '';
     
@@ -265,7 +265,7 @@ class tricorder {
         $this->pdo->exec(
             'CREATE TABLE IF NOT EXISTS `LOG_PLATFORMS` 
             ( `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-            `visitorId` INT UNSIGNED NOT NULL,
+            `visitorId` INT UNSIGNED,
             `browser` VARCHAR(20) NOT NULL DEFAULT "",
             `browserVersion` VARCHAR(20) NOT NULL DEFAULT "",
             `os` VARCHAR(20) NOT NULL DEFAULT "",
