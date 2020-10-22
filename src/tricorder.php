@@ -160,7 +160,7 @@ class tricorder {
         $this->pdo->exec(
             'CREATE TABLE IF NOT EXISTS `LOG_IP_ADDRESS`
             (`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-            `ipAddress` VARBINARY(16) NOT NULL DEFAULT 0x0
+            `ipAddress` VARBINARY(16) NOT NULL DEFAULT 0x0,
             PRIMARY KEY (`id`),
             UNIQUE INDEX `ip`(`ipAddress`))
             ENGINE = InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_unicode_520_ci;'
