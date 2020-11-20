@@ -106,7 +106,7 @@ class tricorder {
             $this->ipId = $this->pdo->lastInsertId();
         }
 
-        if(!$this->userId || !$this->identifyUser) {
+        if(!$this->userId && !$this->identifyUser) {
             $this->initalizeFirstPageLog();
             $this->statement->execute([
                 'url' => $this->theCurrentUrl,
