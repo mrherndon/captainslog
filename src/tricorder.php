@@ -62,10 +62,12 @@ class tricorder {
 		$this->visitTimestamp = (new \DateTime('now'))->format('U');
         $this->ipAddress = $_SERVER['REMOTE_ADDR'];
         
-        $ua = $this->parser->parse();
-        $this->browser = $ua->browser();
-        $this->browserVersion = $ua->browserVersion();
-        $this->platform = $ua->platform();
+        if(isset($_SERVER['HTTP_USER_AGENT'])) {
+            $ua = $this->parser->parse();
+            $this->browser = $ua->browser() ?? '';
+            $this->browserVersion = $ua->browserVersion() ?? '';
+            $this->platform = $ua->platform() ?? '';
+        }
     }
 
     private function parseCookies(): void {
